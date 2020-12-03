@@ -1,4 +1,4 @@
-function resFileClean = preprocessResult(resFile, seqName, dataDir, force, minvis)
+function resFileClean = preprocessResult(resFile, seqName, dataDir, force, minvis, fast_iou, fast_solver)
 % reads submitted (raw) MOT16 result from .txt
 % and removes all boxes that are associated with ambiguous annotations
 % such as sitting people, cyclists or mannequins.
@@ -9,8 +9,9 @@ function resFileClean = preprocessResult(resFile, seqName, dataDir, force, minvi
 assert(cleanRequired(seqName),'preproccessing should only be done for MOT16/17 and MOT20')
 
 if nargin<4, force=1; end
-if nargin<4, force=1; end
 if nargin<5, minvis=0; end
+if nargin<6, fast_iou=0; end
+if nargin<7, fast_solver=0; end
 
 fprintf('Preprocessing (cleaning) %s...\n',seqName);
 
@@ -87,32 +88,57 @@ for t=1:F
     % find all GT boxes in frame
     GTInFrame = find(gtRaw(:,1)==t); Ngt = length(GTInFrame);
     GTInFrame = reshape(GTInFrame,1,Ngt);
-    
-    % compute all overlaps for current frame
-    allisects=zeros(Ngt,N);
-    g=0;
-    for gg=GTInFrame
-        g=g+1; r=0;
-        bxgt=gtRaw(gg,3); bygt=gtRaw(gg,4); bwgt=gtRaw(gg,5); bhgt=gtRaw(gg,6);
-        for rr=resInFrame
-            r=r+1;
-            bxres=resRaw(rr,3); byres=resRaw(rr,4); bwres=resRaw(rr,5); bhres=resRaw(rr,6);
-            
-            if bxgt+bwgt<bxres, continue; end % ignore if no horizontal overlap
-            if bxgt>bxres+bwres, continue; end
-            
-            if bygt+bhgt<byres, continue; end % ignore if no vertical overlap
-            if bygt>byres+bhres, continue; end
-            
-            allisects(g,r)=boxiou(bxgt,bygt,bwgt,bhgt,bxres,byres,bwres,bhres);
+
+    bxgt=gtRaw(GTInFrame,3); bygt=gtRaw(GTInFrame,4); bwgt=gtRaw(GTInFrame,5); bhgt=gtRaw(GTInFrame,6);
+    bxres=resRaw(resInFrame,3); byres=resRaw(resInFrame,4); bwres=resRaw(resInFrame,5); bhres=resRaw(resInFrame,6);
+    % Compute IOU using broadcasting.
+    vol_gt = max(0, bwgt) .* max(0, bhgt);
+    vol_res = max(0, bwres) .* max(0, bhres);
+    xmin_isect = max(bxgt, bxres');
+    xmax_isect = min(bxgt + bwgt, (bxres + bwres)');
+    ymin_isect = max(bygt, byres');
+    ymax_isect = min(bygt + bhgt, (byres + bhres)');
+    vol_isect = max(0, xmax_isect - xmin_isect) .* max(0, ymax_isect - ymin_isect);
+    vol_isect = min(vol_isect, min(vol_gt, vol_res'));  % Ensure intersection is smaller.
+    vol_union = vol_gt + vol_res' - vol_isect;
+    allisects = vol_isect ./ vol_union;
+    allisects(vol_union == 0) = 0;
+
+    if ~fast_iou
+        % compute all overlaps for current frame
+        allisects_expect=zeros(Ngt,N);
+        g=0;
+        for gg=GTInFrame
+            g=g+1; r=0;
+            bxgt=gtRaw(gg,3); bygt=gtRaw(gg,4); bwgt=gtRaw(gg,5); bhgt=gtRaw(gg,6);
+            for rr=resInFrame
+                r=r+1;
+                bxres=resRaw(rr,3); byres=resRaw(rr,4); bwres=resRaw(rr,5); bhres=resRaw(rr,6);
+
+                if bxgt+bwgt<bxres, continue; end % ignore if no horizontal overlap
+                if bxgt>bxres+bwres, continue; end
+
+                if bygt+bhgt<byres, continue; end % ignore if no vertical overlap
+                if bygt>byres+bhres, continue; end
+
+                allisects_expect(g,r)=boxiou(bxgt,bygt,bwgt,bhgt,bxres,byres,bwres,bhres);
+            end
         end
+        assert(all(all(abs(allisects - allisects_expect) <= 1e-8)));
     end
-%     t
-    
-    tmpai=allisects;
-    tmpai=1-tmpai;
-    tmpai(tmpai>td)=Inf;
-    [Mtch,Cst]=Hungarian(tmpai);
+
+    cost_matrix = -allisects;
+    cost_matrix(allisects < 1 - td) = 0;
+    [Mtch,Cst]=MinCostMatching(cost_matrix);
+    Mtch = Mtch .* (cost_matrix ~= 0);  % Mask zero-value matches.
+    if ~fast_solver
+        tmpai=allisects;
+        tmpai=1-tmpai;
+        tmpai(tmpai>td)=Inf;
+        [Mtch_expect,Cst_expect]=Hungarian(tmpai);
+        Cst_expect = Cst_expect - sum(sum(Mtch_expect));
+        assert((Cst - Cst_expect) / max(Ngt, 1) <= 1e-8);
+    end
     [mGT,mRes]=find(Mtch);
 %     pause
     nMtch = length(mGT);

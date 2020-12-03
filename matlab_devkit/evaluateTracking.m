@@ -68,7 +68,12 @@ gtdata(:,2) = ic;
 % MOTX data format
 
 if strcmp(benchmark, 'MOT16') || strcmp(benchmark, 'MOT17') || strcmp(benchmark, 'MOT20')
-    resFilename = preprocessResult(resFilename, sequenceName, gtDataDir);
+    force = 1;
+    minvis = 0;
+    fast_iou = 1;
+    fast_solver = 1;
+    resFilename = preprocessResult(resFilename, sequenceName, gtDataDir, ...
+                                   force, minvis, fast_iou, fast_solver);
 end
 
 % Skip evaluation if output is missing
