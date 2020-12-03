@@ -1,4 +1,4 @@
-#include <matrix.h>
+#include <Matrix.h>
 #include "mex.h"
 #include <cmath>
 #include <omp.h>

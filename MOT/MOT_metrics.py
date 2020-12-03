@@ -129,16 +129,9 @@ class MOTMetrics(Metrics):
 	        self.MLR = self.ML * 100. / float(self.n_gt_trajectories)
 
 	def compute_metrics_per_sequence(self, sequence, pred_file, gt_file, gtDataDir, benchmark_name):
-		import matlab.engine
-		try:
-			eng = matlab.engine.start_matlab()
-			print("MATLAB successfully connected")
-		except:
-			raise Exception("<br> MATLAB could not connect! <br>")
-
-		eng.addpath("matlab_devkit/",nargout=0)
-
-		results = eng.evaluateTracking(sequence, pred_file, gt_file, gtDataDir, benchmark_name , nargout = 5)
-		eng.quit()
+		import oct2py
+		with oct2py.Oct2Py() as oc:
+			oc.feval("addpath", "matlab_devkit/", nout=0)
+			results = oc.feval("evaluateTracking", sequence, pred_file, gt_file, gtDataDir, benchmark_name, nout=5)
 		update_dict = results[4]
 		self.update_values(update_dict)

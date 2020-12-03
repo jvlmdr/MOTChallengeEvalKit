@@ -1,4 +1,4 @@
-#include <matrix.h>
+#include <Matrix.h>
 #include "mex.h"
 #include <cmath>
 #include <omp.h>
@@ -162,9 +162,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	fp = mxGetPr(plhs[1]);
 	fn = mxGetPr(plhs[2]);
 
-#pragma omp parallel for 
 	for (int i = 0; i < numGT; i++) {
-#pragma omp parallel for 
 		for (int j = 0; j < numPred; j++) {
 
 

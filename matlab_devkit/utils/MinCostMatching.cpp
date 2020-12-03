@@ -1,5 +1,5 @@
 #include <mex.h>
-#include <matrix.h>
+#include <Matrix.h>
 #include <vector>
 #include <algorithm>
 using namespace std;
