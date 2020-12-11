@@ -1,4 +1,4 @@
-function resFileClean = preprocessResult(resFile, seqName, dataDir, force, minvis, fast_iou, fast_solver)
+function resFileClean = preprocessResult(resFile, seqName, dataDir, force, minvis)
 % reads submitted (raw) MOT16 result from .txt
 % and removes all boxes that are associated with ambiguous annotations
 % such as sitting people, cyclists or mannequins.
@@ -10,8 +10,6 @@ assert(cleanRequired(seqName),'preproccessing should only be done for MOT16/17 a
 
 if nargin<4, force=1; end
 if nargin<5, minvis=0; end
-if nargin<6, fast_iou=0; end
-if nargin<7, fast_solver=0; end
 
 fprintf('Preprocessing (cleaning) %s...\n',seqName);
 
@@ -104,42 +102,24 @@ for t=1:F
     allisects = vol_isect ./ vol_union;
     allisects(vol_union == 0) = 0;
 
-    if ~fast_iou
-        % compute all overlaps for current frame
-        allisects_expect=zeros(Ngt,N);
-        g=0;
-        for gg=GTInFrame
-            g=g+1; r=0;
-            bxgt=gtRaw(gg,3); bygt=gtRaw(gg,4); bwgt=gtRaw(gg,5); bhgt=gtRaw(gg,6);
-            for rr=resInFrame
-                r=r+1;
-                bxres=resRaw(rr,3); byres=resRaw(rr,4); bwres=resRaw(rr,5); bhres=resRaw(rr,6);
+    is_candidate = (allisects >= 1 - td);
+    eps = 1 / (max(size(allisects)) + 1);
+    cost_matrix = -(is_candidate + eps * (allisects .* is_candidate));
+    Mtch_neg = MinCostMatching(cost_matrix);
+    Mtch_neg = Mtch_neg .* is_candidate;  % Mask zero-value matches.
+    isect_neg = sum(allisects(find(Mtch_neg)));
 
-                if bxgt+bwgt<bxres, continue; end % ignore if no horizontal overlap
-                if bxgt>bxres+bwres, continue; end
+    tmpai=allisects;
+    tmpai=1-tmpai;
+    tmpai(tmpai>td)=Inf;
+    Mtch_pos = MinCostMatching(tmpai);
+    Mtch_pos = Mtch_pos .* is_candidate;
+    isect_pos = sum(allisects(find(Mtch_pos)));
 
-                if bygt+bhgt<byres, continue; end % ignore if no vertical overlap
-                if bygt>byres+bhres, continue; end
+    assert(sum(sum(Mtch_neg)) == sum(sum(Mtch_pos)));
+    assert((isect_neg - isect_pos) / max(Ngt, 1) <= 1e-8);
 
-                allisects_expect(g,r)=boxiou(bxgt,bygt,bwgt,bhgt,bxres,byres,bwres,bhres);
-            end
-        end
-        assert(all(all(abs(allisects - allisects_expect) <= 1e-8)));
-    end
-
-    cost_matrix = -allisects;
-    cost_matrix(allisects < 1 - td) = 0;
-    [Mtch,Cst]=MinCostMatching(cost_matrix);
-    Mtch = Mtch .* (cost_matrix ~= 0);  % Mask zero-value matches.
-    if ~fast_solver
-        tmpai=allisects;
-        tmpai=1-tmpai;
-        tmpai(tmpai>td)=Inf;
-        [Mtch_expect,Cst_expect]=Hungarian(tmpai);
-        Cst_expect = Cst_expect - sum(sum(Mtch_expect));
-        assert((Cst - Cst_expect) / max(Ngt, 1) <= 1e-8);
-    end
-    [mGT,mRes]=find(Mtch);
+    [mGT,mRes]=find(Mtch_neg);
 %     pause
     nMtch = length(mGT);
     % go through all matches

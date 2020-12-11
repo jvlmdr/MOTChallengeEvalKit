@@ -70,10 +70,7 @@ gtdata(:,2) = ic;
 if strcmp(benchmark, 'MOT16') || strcmp(benchmark, 'MOT17') || strcmp(benchmark, 'MOT20')
     force = 1;
     minvis = 0;
-    fast_iou = 1;
-    fast_solver = 1;
-    resFilename = preprocessResult(resFilename, sequenceName, gtDataDir, ...
-                                   force, minvis, fast_iou, fast_solver);
+    resFilename = preprocessResult(resFilename, sequenceName, gtDataDir, force, minvis);
 end
 
 % Skip evaluation if output is missing
