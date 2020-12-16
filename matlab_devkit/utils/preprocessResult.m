@@ -105,21 +105,10 @@ for t=1:F
     is_candidate = (allisects >= 1 - td);
     eps = 1 / (max(size(allisects)) + 1);
     cost_matrix = -(is_candidate + eps * (allisects .* is_candidate));
-    Mtch_neg = MinCostMatching(cost_matrix);
-    Mtch_neg = Mtch_neg .* is_candidate;  % Mask zero-value matches.
-    isect_neg = sum(allisects(find(Mtch_neg)));
+    Mtch = MinCostMatching(cost_matrix);
+    Mtch = Mtch .* is_candidate;  % Mask zero-value matches.
 
-    tmpai=allisects;
-    tmpai=1-tmpai;
-    tmpai(tmpai>td)=Inf;
-    Mtch_pos = MinCostMatching(tmpai);
-    Mtch_pos = Mtch_pos .* is_candidate;
-    isect_pos = sum(allisects(find(Mtch_pos)));
-
-    assert(sum(sum(Mtch_neg)) == sum(sum(Mtch_pos)));
-    assert((isect_neg - isect_pos) / max(Ngt, 1) <= 1e-8);
-
-    [mGT,mRes]=find(Mtch_neg);
+    [mGT,mRes]=find(Mtch);
 %     pause
     nMtch = length(mGT);
     % go through all matches
