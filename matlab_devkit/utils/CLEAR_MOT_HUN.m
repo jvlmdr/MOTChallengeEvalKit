@@ -75,11 +75,12 @@ for i=1:Ngt
     trlengtha=numel(find(alltracked(gtframes,i)>0));
     if trlengtha/gttotallength < 0.2
         MTstatsa(i)=3;
-    elseif F>=find(gtMat(gtMat(:,2)==i,1),1,'last') && trlengtha/gttotallength <= 0.8
+    elseif trlengtha/gttotallength <= 0.8
         MTstatsa(i)=2;
-    elseif trlengtha/gttotallength >= 0.8
+    else
         MTstatsa(i)=1;
     end
+    assert(F>=find(gtMat(gtMat(:,2)==i,1),1,'last'), 'number tracked exceeds number of frames');
 end
 % MTstatsa
 MT=numel(find(MTstatsa==1));
