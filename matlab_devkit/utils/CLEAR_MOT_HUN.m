@@ -80,7 +80,8 @@ for i=1:Ngt
     else
         MTstatsa(i)=1;
     end
-    assert(F>=find(gtMat(gtMat(:,2)==i,1),1,'last'), 'number tracked exceeds number of frames');
+    assert(Fgt>=find(gtframes,1,'last'), ...
+           'number of frames in track exceeds number of frames')
 end
 % MTstatsa
 MT=numel(find(MTstatsa==1));
