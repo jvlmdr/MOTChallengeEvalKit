@@ -40,14 +40,14 @@ fn = zeros(size(cost));
 
 % Compute cost block
 [costBlock, fpBlock, fnBlock] = costBlockMex(ground_truth, prediction, threshold, world);
-for i = 1:length(ground_truth)
-    for j = 1:length(prediction)
-        [cost(i,j), fp(i,j), fn(i,j)] = costFunction(ground_truth{i}, prediction{j}, threshold, world);
-        if cost(i, j) ~= costBlock(i, j)
-            error('mex and matlab cost functions do not agree');
-        end
-    end
-end
+% for i = 1:length(ground_truth)
+%     for j = 1:length(prediction)
+%         [cost(i,j), fp(i,j), fn(i,j)] = costFunction(ground_truth{i}, prediction{j}, threshold, world);
+%         if cost(i, j) ~= costBlock(i, j)
+%             error('mex and matlab cost functions do not agree');
+%         end
+%     end
+% end
 cost(1:size(costBlock,1),1:size(costBlock,2)) = costBlock;
 fp(1:size(costBlock,1),1:size(costBlock,2)) = fpBlock;
 fn(1:size(costBlock,1),1:size(costBlock,2)) = fnBlock;
