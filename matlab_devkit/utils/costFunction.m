@@ -1,7 +1,7 @@
 function [cost, fp, fn] = costFunction( tr1, tr2, THRESHOLD, world )
 
-frames_gt   = tr1(:,2);
-frames_pred = tr2(:,2);
+frames_gt   = tr1(:,1);
+frames_pred = tr2(:,1);
 
 % If trajectories don't overlap in time then return cost or inf
 overlapTest = (frames_gt(1) >= frames_pred(1) && frames_gt(1) < frames_pred(end)) || ...

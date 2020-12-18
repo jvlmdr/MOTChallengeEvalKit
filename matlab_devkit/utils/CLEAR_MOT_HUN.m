@@ -48,6 +48,7 @@ VERBOSE = false;
 [mme, c, fp, m, g, d, alltracked, allfalsepos] = clearMOTMex(gtMat, resMat, threshold, world, VERBOSE);
 Fgt = max(gtMat(:,1)); % Assumes first gt frame is 1
 Ngt = length(unique(gtMat(:,2)));
+Ntr = length(unique(resMat(:,2)));
 F = max(resMat(:,1));
 missed=sum(m);
 falsepositives=sum(fp);
@@ -109,6 +110,7 @@ additionalInfo.id_switches = idswitches;
 additionalInfo.tp = sum(c);
 additionalInfo.total_num_frames = Fgt;
 additionalInfo.n_gt_trajectories = Ngt;
+additionalInfo.n_tr_trajectories = Ntr;
 additionalInfo.total_cost = sum(sum(d));
 
 

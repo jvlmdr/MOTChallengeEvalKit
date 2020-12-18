@@ -24,6 +24,7 @@ class MOTMetrics(Metrics):
 		self.register(name = "IDTP", formatter='{:.0f}'.format, write_mail = False)
 		self.register(name = "IDFP", formatter='{:.0f}'.format, write_mail = False)
 		self.register(name = "IDFN", formatter='{:.0f}'.format, write_mail = False)
+		self.register(name = "n_overlap", formatter='{:.0f}'.format, write_mail = False)
 
 
 

@@ -15,6 +15,8 @@ function [measures] = IDmeasures( groundTruthMat, predictionMat, threshold, worl
 %    world            - boolean paramenter determining if the evaluation is
 %                       done in the world ground plane or in the image plane
 
+predictionMat = sortrows(predictionMat, 1);
+
 % Convert input trajectories from .top format to cell arrays. Each cell has 
 % data for one identity.
 idsPred = unique(predictionMat(:,2));
@@ -38,11 +40,14 @@ fn = zeros(size(cost));
 
 % Compute cost block
 [costBlock, fpBlock, fnBlock] = costBlockMex(ground_truth, prediction, threshold, world);
-% for i = 1:length(ground_truth)
-%     for j = 1:length(prediction)
-%         [cost(i,j), fp(i,j), fn(i,j)] = costFunction(ground_truth{i}, prediction{j}, threshold, world);
-%     end
-% end
+for i = 1:length(ground_truth)
+    for j = 1:length(prediction)
+        [cost(i,j), fp(i,j), fn(i,j)] = costFunction(ground_truth{i}, prediction{j}, threshold, world);
+        if cost(i, j) ~= costBlock(i, j)
+            error('mex and matlab cost functions do not agree');
+        end
+    end
+end
 cost(1:size(costBlock,1),1:size(costBlock,2)) = costBlock;
 fp(1:size(costBlock,1),1:size(costBlock,2)) = fpBlock;
 fn(1:size(costBlock,1),1:size(costBlock,2)) = fnBlock;
@@ -99,4 +104,11 @@ measures.IDTP = IDTP;
 measures.IDFP = IDFP;
 measures.IDFN = IDFN;
 
+% Get total number of matches.
+% TP(i, j) + FN(i, j) = Ngt(i)
+% TP(i, j) = Ngt(i) - FN(i, j)
+gt_size = cellfun(@(x) size(x,1), ground_truth);
+num_candidates = gt_size - fn(1:length(ground_truth), 1:length(prediction));
+assert(all(num_candidates >= 0));
+measures.n_overlap = sum(num_candidates(:));
 
