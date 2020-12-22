@@ -13,10 +13,14 @@ flags.DEFINE_string('eval_mode', 'train', 'Which subset, train or test.')
 flags.DEFINE_string('res_dir', None, 'Directory containing predictions of one tracker.')
 flags.DEFINE_string('seqmaps_dir', 'seqmaps', 'Challenge to evaluate.')
 flags.DEFINE_string('output_file', None, 'CSV file to write metrics to.')
+flags.DEFINE_string('debug_dir', None, 'Dir to write debug.')
 
 
 def main(_):
-    evaluator = evalMOT.MOT_evaluator()
+    if FLAGS.debug_dir:
+        os.makedirs(FLAGS.debug_dir, exist_ok=True)
+
+    evaluator = evalMOT.MOT_evaluator(debug_dir=FLAGS.debug_dir)
     overall_metrics, sequence_metrics = evaluator.run(
             benchmark_name=FLAGS.benchmark_name,
             gt_dir=FLAGS.gt_dir,

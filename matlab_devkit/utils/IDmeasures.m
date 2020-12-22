@@ -7,7 +7,7 @@
 % Ergys Ristani 
 % Duke University 2016
 
-function [measures] = IDmeasures( groundTruthMat, predictionMat, threshold, world )
+function [measures, debugInfo] = IDmeasures( groundTruthMat, predictionMat, threshold, world )
 % Input: 
 %    groundTruthMat   - frame, ID, left, top, width, height, worldX, worldY
 %    predictionMat    - frame, ID, left, top, width, height, worldX, worldY
@@ -104,11 +104,23 @@ measures.IDTP = IDTP;
 measures.IDFP = IDFP;
 measures.IDFN = IDFN;
 
-% Get total number of matches.
+% Get total number of overlapping boxes.
 % TP(i, j) + FN(i, j) = Ngt(i)
 % TP(i, j) = Ngt(i) - FN(i, j)
-gt_size = cellfun(@(x) size(x,1), ground_truth);
-num_candidates = gt_size - fn(1:length(ground_truth), 1:length(prediction));
-assert(all(num_candidates >= 0));
-measures.n_overlap = sum(num_candidates(:));
+sizeGT = cellfun(@(x) size(x,1), ground_truth);
+sizePred = cellfun(@(x) size(x,1), prediction);
+% Check that the TP counts are consistent.
+overlapCountsFromFN = sizeGT - fn(1:length(ground_truth), 1:length(prediction));
+overlapCountsFromFP = sizePred' - fp(1:length(ground_truth), 1:length(prediction));
+assert(all(overlapCountsFromFN(:) == overlapCountsFromFP(:)));
+overlapCounts = overlapCountsFromFN;
+assert(all(overlapCounts(:) >= 0));
+measures.n_overlap = sum(overlapCounts(:));
+
+debugInfo.ids_gt = idsGT;
+debugInfo.ids_pr = idsPred;
+debugInfo.count_overlap = overlapCounts;
+debugInfo.count_gt = sizeGT;
+debugInfo.count_pr = sizePred;
+debugInfo.is_opt = optimalMatch(1:length(ground_truth), 1:length(prediction));
 

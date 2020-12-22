@@ -1,5 +1,8 @@
 import math
+import os
 from collections import defaultdict
+import numpy as np
+import pandas as pd
 from Metrics import Metrics
 
 
@@ -129,10 +132,46 @@ class MOTMetrics(Metrics):
 	        self.PTR = self.PT * 100. / float(self.n_gt_trajectories)
 	        self.MLR = self.ML * 100. / float(self.n_gt_trajectories)
 
-	def compute_metrics_per_sequence(self, sequence, pred_file, gt_file, gtDataDir, benchmark_name):
+	def compute_metrics_per_sequence(self, sequence, pred_file, gt_file, gtDataDir, benchmark_name, debug_dir):
 		import oct2py
 		with oct2py.Oct2Py() as oc:
 			oc.feval("addpath", "matlab_devkit/", nout=0)
-			results = oc.feval("evaluateTracking", sequence, pred_file, gt_file, gtDataDir, benchmark_name, nout=5)
+			results = oc.feval("evaluateTracking", sequence, pred_file, gt_file, gtDataDir, benchmark_name, nout=6)
 		update_dict = results[4]
 		self.update_values(update_dict)
+		if debug_dir:
+			debug_info = results[5]
+			with open(os.path.join(debug_dir, f'id-{sequence}.csv'), 'w') as f:
+				_write_id_assignment(f, debug_info)
+
+
+def _write_id_assignment(f, debug_info):
+	freq_gt = np.squeeze(debug_info['id']['count_gt'], axis=1)
+	freq_pr = np.squeeze(debug_info['id']['count_pr'], axis=1)
+	matrix_oids = np.squeeze(debug_info['id']['ids_gt'], axis=1).astype(np.int)
+	matrix_hids = np.squeeze(debug_info['id']['ids_pr'], axis=1).astype(np.int)
+	tp_matrix = debug_info['id']['count_overlap']
+	is_opt = debug_info['id']['is_opt']
+
+	# Iterate through all track pairs with non-zero overlap.
+	pairs = []
+	for i, oid in enumerate(matrix_oids):
+		for j, hid in enumerate(matrix_hids):
+			if tp_matrix[i, j] == 0:
+				continue
+			pairs.append({
+					'gt_id': oid,
+					'pr_id': hid,
+					'gt_len': freq_gt[i],
+					'pr_len': freq_pr[j],
+					'tp': tp_matrix[i, j],
+					'opt': 1 if is_opt[i, j] else 0,
+			})
+
+	if not pairs:
+		# Leave file empty.
+		return
+	columns = ['gt_id', 'pr_id', 'gt_len', 'pr_len', 'tp', 'opt']
+	table = pd.DataFrame.from_records(pairs, columns=columns)
+	table = table.set_index(['gt_id', 'pr_id']).sort_index()
+	table.to_csv(f, float_format='%g', header=False)

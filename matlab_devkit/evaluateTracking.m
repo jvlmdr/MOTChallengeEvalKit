@@ -1,4 +1,4 @@
-function [sequenceName, mets, metsID, additionalInfo, results]=evaluateTracking(sequenceName, resFilename, gtFilename, gtDataDir, benchmark)
+function [sequenceName, mets, metsID, additionalInfo, results, debugInfo]=evaluateTracking(sequenceName, resFilename, gtFilename, gtDataDir, benchmark)
 % seqmap, resDir, gtDataDir, benchmark
 % Input:
 % - seqmap
@@ -24,7 +24,6 @@ function [sequenceName, mets, metsID, additionalInfo, results]=evaluateTracking(
 %
 % - metsMultiCam
 % Scores for multi-camera evaluation
-
 
 addpath(genpath('.'));
 addpath(genpath('/srv/motchallenge/MOTChallenge/motchallenge-devkit'));
@@ -58,8 +57,8 @@ end
 if strcmp(benchmark, 'MOT15_3D')
     gtdata(:,[7 8]) = gtdata(:,[8 9]); % shift world coordinates
 end
-[~, ~, ic] = unique(gtdata(:,2)); % normalize IDs
-gtdata(:,2) = ic;
+% [~, ~, ic] = unique(gtdata(:,2)); % normalize IDs
+% gtdata(:,2) = ic;
 %gtMat{ind} = gtdata;
 
 
@@ -114,7 +113,8 @@ end
 % Evaluate sequence
 [metsCLEAR, mInf, additionalInfo] = CLEAR_MOT_HUN(gtdata, resdata, threshold, world);
 
-metsID = IDmeasures(gtdata, resdata, threshold, world);
+[metsID, debugInfoID] = IDmeasures(gtdata, resdata, threshold, world);
+debugInfo.id = debugInfoID;
 mets = [metsID.IDF1, metsID.IDP, metsID.IDR, metsCLEAR];
 
 keySet = mInf.names.short;

@@ -9,8 +9,10 @@ import pandas as pd
 
 
 class MOT_evaluator(Evaluator):
-	def __init__(self):
+	def __init__(self, debug_dir=None):
 		self.type = "MOT"
+		self.debug_dir = debug_dir
+
 	def eval(self):
 
 		print("Check prediction files")
@@ -51,7 +53,8 @@ class MOT_evaluator(Evaluator):
 			"sequence": str(seq) ,
 			"pred_file":res,
 			"gt_file": gt,
-			"benchmark_name": self.benchmark_name}})
+			"benchmark_name": self.benchmark_name,
+			"debug_dir": self.debug_dir}})
 		try:
 			if self.MULTIPROCESSING:
 				p = mp.Pool(self.NR_CORES)
