@@ -1,4 +1,4 @@
-function [sequenceName, mets, metsID, additionalInfo, results, debugInfo]=evaluateTracking(sequenceName, resFilename, gtFilename, gtDataDir, benchmark)
+function [sequenceName, mets, metsID, additionalInfo, results, resdata, debugInfo]=evaluateTracking(sequenceName, resFilename, gtFilename, gtDataDir, benchmark)
 % seqmap, resDir, gtDataDir, benchmark
 % Input:
 % - seqmap
