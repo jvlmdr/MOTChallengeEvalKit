@@ -142,10 +142,14 @@ class MOTMetrics(Metrics):
 		if debug_dir:
 			# Write preprocessed predictions to file.
 			resdata = results[5]
-			df = pd.DataFrame(resdata[:, :9])
-			df.iloc[:, 2:6] = df.iloc[:, 2:6].round(3) + 0  # Add zero to convert -0 to 0.
 			with open(os.path.join(debug_dir, f'clean-{sequence}.csv'), 'w') as f:
-				df.to_csv(f, index=False, header=False, float_format='%g')
+				if np.size(resdata) != 0:  # Otherwise leave file empty.
+					columns = ['FrameId', 'Id', 'X', 'Y', 'Width', 'Height', 'Confidence', 'ClassId', 'Visibility']
+					df = pd.DataFrame(resdata[:, :9], columns=columns)
+					df = df.set_index(['FrameId', 'Id']).sort_index()
+					xywh = ['X', 'Y', 'Width', 'Height']
+					df[xywh] = df[xywh].round(3) + 0  # Add zero to convert -0 to 0.
+					df.to_csv(f, header=False, float_format='%g')
 			# Write ID debug info to file.
 			debug_info = results[6]
 			with open(os.path.join(debug_dir, f'id-{sequence}.csv'), 'w') as f:
