@@ -74,7 +74,9 @@ class DETMetrics(Metrics):
 	    else:
 	        self.MODP = 0
 
-	    order = np.argsort(self.scores)[::-1]
+            # Sort by score (decreasing) then correctness (0, 1).
+	    keys = np.stack([-self.scores, self.tp_list])
+	    order = np.lexsort(keys)
 	    self.tp_list=self.tp_list[order]
 	    FP = np.array(self.tp_list!=1.)
 	    TP = np.cumsum(self.tp_list)
