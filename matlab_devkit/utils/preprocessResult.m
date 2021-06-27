@@ -146,7 +146,7 @@ for t=1:F
         end
         
         % if we encounter a partially occluded box, mark to remove
-        if gtRaw(g,9)<minvis
+        if gtRaw(g,9)<minvis && gtClassID == 1
             r = resInFrame(mRes(m)); % result box
             keepBoxes(r) = false;
             
