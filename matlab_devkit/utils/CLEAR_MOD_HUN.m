@@ -60,6 +60,8 @@ td=options.td;
 Fgt=max(gt(:,1)); Ngt=max(gt(:,2));
 F=max(det(:,1)); N=max(det(:,2));
 
+F = max(F, Fgt);
+
 %  
 %  % if stateInfo shorter, pad with zeros
 %  if F<Fgt
