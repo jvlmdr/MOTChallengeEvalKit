@@ -100,18 +100,12 @@ class DETMetrics(Metrics):
 
 		sum_tuple = lambda x: sum(map(sum_tuple, x)) if isinstance(x, tuple) else x
 		tuple_to_list = lambda x: list(map(tuple_to_list, x)) if isinstance(x, tuple) else x
-		import matlab.engine
-		try:
-			eng = matlab.engine.start_matlab()
-			print("MATLAB successfully connected")
-		except:
-			raise Exception("<br> MATLAB could not connect! <br>")
 
-		eng.addpath("matlab_devkit/",nargout=0)
-		print("start matlab evaluation")
-		results = eng.evaluateDetection(sequence, pred_file, gt_file, gtDataDir, benchmark_name , nargout = 1)
+		import oct2py
+		with oct2py.Oct2Py() as oc:
+			oc.feval("addpath", "matlab_devkit/", nout=0)
+			results = oc.feval("evaluateDetection", sequence, pred_file, gt_file, gtDataDir, benchmark_name, nout=1)
 
-		eng.quit()
 		update_dict = results
 		results["ious"] =  np.array( tuple_to_list(results["ious"] )).reshape(-1)
 		results["scores"] = np.asarray(results['scores']).reshape(-1)
