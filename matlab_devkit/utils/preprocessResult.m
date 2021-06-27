@@ -9,7 +9,6 @@ function resFileClean = preprocessResult(resFile, seqName, dataDir, force, minvi
 assert(cleanRequired(seqName),'preproccessing should only be done for MOT16/17 and MOT20')
 
 if nargin<4, force=1; end
-if nargin<4, force=1; end
 if nargin<5, minvis=0; end
 
 fprintf('Preprocessing (cleaning) %s...\n',seqName);
@@ -87,32 +86,28 @@ for t=1:F
     % find all GT boxes in frame
     GTInFrame = find(gtRaw(:,1)==t); Ngt = length(GTInFrame);
     GTInFrame = reshape(GTInFrame,1,Ngt);
-    
-    % compute all overlaps for current frame
-    allisects=zeros(Ngt,N);
-    g=0;
-    for gg=GTInFrame
-        g=g+1; r=0;
-        bxgt=gtRaw(gg,3); bygt=gtRaw(gg,4); bwgt=gtRaw(gg,5); bhgt=gtRaw(gg,6);
-        for rr=resInFrame
-            r=r+1;
-            bxres=resRaw(rr,3); byres=resRaw(rr,4); bwres=resRaw(rr,5); bhres=resRaw(rr,6);
-            
-            if bxgt+bwgt<bxres, continue; end % ignore if no horizontal overlap
-            if bxgt>bxres+bwres, continue; end
-            
-            if bygt+bhgt<byres, continue; end % ignore if no vertical overlap
-            if bygt>byres+bhres, continue; end
-            
-            allisects(g,r)=boxiou(bxgt,bygt,bwgt,bhgt,bxres,byres,bwres,bhres);
-        end
-    end
-%     t
-    
-    tmpai=allisects;
-    tmpai=1-tmpai;
-    tmpai(tmpai>td)=Inf;
-    [Mtch,Cst]=Hungarian(tmpai);
+
+    bxgt=gtRaw(GTInFrame,3); bygt=gtRaw(GTInFrame,4); bwgt=gtRaw(GTInFrame,5); bhgt=gtRaw(GTInFrame,6);
+    bxres=resRaw(resInFrame,3); byres=resRaw(resInFrame,4); bwres=resRaw(resInFrame,5); bhres=resRaw(resInFrame,6);
+    % Compute IOU using broadcasting.
+    vol_gt = max(0, bwgt) .* max(0, bhgt);
+    vol_res = max(0, bwres) .* max(0, bhres);
+    xmin_isect = max(bxgt, bxres');
+    xmax_isect = min(bxgt + bwgt, (bxres + bwres)');
+    ymin_isect = max(bygt, byres');
+    ymax_isect = min(bygt + bhgt, (byres + bhres)');
+    vol_isect = max(0, xmax_isect - xmin_isect) .* max(0, ymax_isect - ymin_isect);
+    vol_isect = min(vol_isect, min(vol_gt, vol_res'));  % Ensure intersection is smaller.
+    vol_union = vol_gt + vol_res' - vol_isect;
+    allisects = vol_isect ./ vol_union;
+    allisects(vol_union == 0) = 0;
+
+    is_candidate = (allisects >= 1 - td);
+    eps = 1 / (max(size(allisects)) + 1);
+    cost_matrix = -(is_candidate + eps * (allisects .* is_candidate));
+    Mtch = MinCostMatching(cost_matrix);
+    Mtch = Mtch .* is_candidate;  % Mask zero-value matches.
+
     [mGT,mRes]=find(Mtch);
 %     pause
     nMtch = length(mGT);

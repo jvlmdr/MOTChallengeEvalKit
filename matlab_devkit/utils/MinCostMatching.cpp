@@ -150,9 +150,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 	vector<vector<double>> alldist(squareSize, vector<double>(squareSize, INF));
     for (int i = 0; i < nOfRows; i++)
     {
-        for (int j =0; j < nOfColumns; j++)
+        for (int j = 0; j < nOfColumns; j++)
         {
-            alldist[i][j] = distMatrix[j*nOfRows + i];
+            alldist[i][j] = min(distMatrix[j*nOfRows + i], INF);
         }
     }
     
