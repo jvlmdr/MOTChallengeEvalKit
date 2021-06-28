@@ -74,9 +74,7 @@ class DETMetrics(Metrics):
 	    else:
 	        self.MODP = 0
 
-            # Sort by score (decreasing) then correctness (0, 1).
-	    keys = np.stack([-self.scores, self.tp_list])
-	    order = np.lexsort(keys)
+	    order = np.argsort(self.scores)[::-1]
 	    self.tp_list=self.tp_list[order]
 	    FP = np.array(self.tp_list!=1.)
 	    TP = np.cumsum(self.tp_list)
@@ -87,14 +85,19 @@ class DETMetrics(Metrics):
 	    ys = TP/(TP+FP)
 	    xs1 = np.append(xs, np.inf)
 	    ys1 = np.append(ys, 0)
+	    sorted_scores = np.append(self.scores[order], -np.inf)
 
 	    self.RefPrcn = np.linspace( 0, 1, 11)
 	    self.xs1 = xs1
 	    self.ys1 = ys1
 
 	    for i, r in enumerate(self.RefPrcn ):
-	        j = np.where(xs1 >= r)[0]
-	        self.RefPrcn[i] = ys1[j[0]]
+	        # Find first element with desired recall.
+	        j, = np.where(xs1 >= r)
+	        score = sorted_scores[j[0]]
+	        k, = np.where(sorted_scores >= score)
+	        # Take last element with corresponding score.
+	        self.RefPrcn[i] = ys1[k[-1]]
 
 	    self.AP = np.mean( self.RefPrcn )
 
