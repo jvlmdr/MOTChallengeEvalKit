@@ -54,6 +54,12 @@ end
 
 detRaw=dlmread(resFile);
 
+% Keep only valid frames and pedestrian class.
+detRaw=detRaw((1 <= detRaw(:, 1)) & (detRaw(:, 1) <= F), :);
+if size(detRaw, 2) >= 8;
+    detRaw=detRaw(~(detRaw(:, 8) > 1), :);
+end
+
 %
 gtOne= {};
 detOne = {};
